@@ -1,0 +1,12 @@
+[package]
+name = "share_login"
+version = "0.1.0"
+authors = ["est31 <MTest31@outlook.com>"]
+
+[dependencies]
+rusqlite = "0.7.3"
+rotor = "0.6.3"
+rotor-http = "0.7.0"
+rustc-serialize = "0.3"
+log = "0.3.6"
+env_logger = "0.3.3"
