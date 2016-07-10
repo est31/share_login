@@ -16,12 +16,6 @@ use rusqlite::{Connection, MappedRows, Statement, Error as RusqliteError};
 
 use rustc_serialize::json;
 
-/*trait
-
-struct OpenHelper<a :VersionManager> {
-
-}*/
-
 trait VersionAccess {
 	fn version(&self) -> Result<i32, RusqliteError>;
 	fn set_version(&self, v :i32) -> Result<(), RusqliteError>;
