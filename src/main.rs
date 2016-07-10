@@ -342,7 +342,8 @@ fn create_db(conn :&Connection) {
 
 fn main() {
 	env_logger::init().unwrap();
-	println!("Starting http server on http://127.0.0.1:8000/");
+	let listen_addr = "127.0.0.1:8000";
+	println!("Starting http server on http://{}/", listen_addr);
 
 	let db_path = "database.sqlite";
 	let conn = Connection::open(db_path).unwrap();
@@ -356,7 +357,8 @@ fn main() {
 	let event_loop = rotor::Loop::new(&rotor::Config::new()).unwrap();
 	let mut loop_inst = event_loop.instantiate(PreparedStatements::new(&conn).unwrap());
 
-	let lst = TcpListener::bind(&"127.0.0.1:8000".parse().unwrap()).unwrap();
+	let lst = TcpListener::bind(&{let ar :&str = listen_addr.as_ref(); ar }
+		.parse().unwrap()).unwrap();
 
 	loop_inst.add_machine_with(|scope| {
 		Fsm::<Request, _>::new(lst, (), scope)
