@@ -1,6 +1,8 @@
 [package]
 name = "share_login"
+description = "HTTP server to share accounts between multiple minetest servers"
 version = "0.1.0"
+readme = "README.md"
 authors = ["est31 <MTest31@outlook.com>"]
 
 [dependencies]
