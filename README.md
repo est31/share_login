@@ -7,6 +7,8 @@ It is separated in two parts:
 1. A minetest mod written in lua, that provides an auth handler and talks with an HTTP server
 2. A HTTP server written in rust, that takes care of the database
 
+**NOTE:** this is still in the early stages of development. Its nice for getting tested, but please don't run it on production servers :).
+
 ## Setup
 
 ### Server
