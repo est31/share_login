@@ -185,100 +185,100 @@ impl<'a> Server for Request<'a> {
 
 			info!{"SERVER ID => {:?}", server_id};
 			match server_id {
-				Some(ref srv_id) => {
-					match command {
-						GetAuth => {
-							#[derive(RustcDecodable)]
-							struct GetAuthData {
-								name :String,
-							}
-							let d :GetAuthData = ttry!(json::decode(
-								ttry!(std::str::from_utf8(body))
-							));
-							let rows = scope.get_auth.query_map(&[&d.name, srv_id], |row|
-								(row.get(0), row.get(1), row.get(2)));
-							let pw_llogin_privs :Option<(String, String, String)> =
-								ttry!(optionalize(rows));
+			Some(ref srv_id) => {
+				match command {
+				GetAuth => {
+					#[derive(RustcDecodable)]
+					struct GetAuthData {
+						name :String,
+					}
+					let d :GetAuthData = ttry!(json::decode(
+						ttry!(std::str::from_utf8(body))
+					));
+					let rows = scope.get_auth.query_map(&[&d.name, srv_id], |row|
+						(row.get(0), row.get(1), row.get(2)));
+					let pw_llogin_privs :Option<(String, String, String)> =
+						ttry!(optionalize(rows));
 
-							#[derive(RustcEncodable)]
-							struct AuthAnswer {
-								password :String,
-								privileges :String,
-								last_login :String,
-							}
-							match pw_llogin_privs {
-							Some((pw, privs, llogin)) => {
-								let ans = AuthAnswer {
-									password : pw,
-									privileges : privs,
-									last_login : llogin,
-								};
-								let encoded = ttry!(json::encode(&ans));
-								send_string(res, encoded.as_str().as_ref());
-							},
-							None => send_error(res, 404, ""),
-							}
-						},
-						CreateAuth => {
-							#[derive(RustcDecodable)]
-							struct CreateAuthData {
-								name :String,
-								password :String,
-								privileges :String,
-							}
-							let d :CreateAuthData = ttry!(json::decode(
-								ttry!(std::str::from_utf8(body))
-							));
-							ttry!(scope.create_auth_pl.execute(&[
-								&d.name, &d.password, &""]));
-							ttry!(scope.create_auth_pr.execute(&[
-								srv_id, &d.name, &d.privileges]));
-							send_string(res, &[]);
-						},
-						SetPassword => {
-							#[derive(RustcDecodable)]
-							struct SetPasswordData {
-								name :String,
-								password :String,
-							}
-							let d :SetPasswordData = ttry!(json::decode(
-								ttry!(std::str::from_utf8(body))
-							));
-							ttry!(scope.set_password.execute(&[
-								&d.name, &d.password]));
-							send_string(res, &[]);
-						},
-						SetPrivileges => {
-							#[derive(RustcDecodable)]
-							struct SetPrivsData {
-								name :String,
-								privileges :String,
-							}
-							let d :SetPrivsData = ttry!(json::decode(
-								ttry!(std::str::from_utf8(body))
-							));
-							ttry!(scope.set_privileges.execute(&[
-								&d.privileges, srv_id, &d.name]));
-							send_string(res, &[]);
-						},
-						RecordLogin => {
-							#[derive(RustcDecodable)]
-							struct RecordLoginData {
-								name :String,
-								last_login :f64,
-							}
-							let d :RecordLoginData = ttry!(json::decode(
-								ttry!(std::str::from_utf8(body))
-							));
-							ttry!(scope.record_login.execute(&[
-								&d.last_login, &d.name]));
-							send_string(res, &[]);
-						},
+					#[derive(RustcEncodable)]
+					struct AuthAnswer {
+						password :String,
+						privileges :String,
+						last_login :String,
+					}
+					match pw_llogin_privs {
+					Some((pw, privs, llogin)) => {
+						let ans = AuthAnswer {
+							password : pw,
+							privileges : privs,
+							last_login : llogin,
+						};
+						let encoded = ttry!(json::encode(&ans));
+						send_string(res, encoded.as_str().as_ref());
+					},
+					None => send_error(res, 404, ""),
 					}
 				},
-				None => {
-					send_error(res, 401, "Unauthorized");
+				CreateAuth => {
+					#[derive(RustcDecodable)]
+					struct CreateAuthData {
+						name :String,
+						password :String,
+						privileges :String,
+					}
+					let d :CreateAuthData = ttry!(json::decode(
+						ttry!(std::str::from_utf8(body))
+					));
+					ttry!(scope.create_auth_pl.execute(&[
+						&d.name, &d.password, &""]));
+					ttry!(scope.create_auth_pr.execute(&[
+						srv_id, &d.name, &d.privileges]));
+					send_string(res, &[]);
 				},
+				SetPassword => {
+					#[derive(RustcDecodable)]
+					struct SetPasswordData {
+						name :String,
+						password :String,
+					}
+					let d :SetPasswordData = ttry!(json::decode(
+						ttry!(std::str::from_utf8(body))
+					));
+					ttry!(scope.set_password.execute(&[
+						&d.name, &d.password]));
+					send_string(res, &[]);
+				},
+				SetPrivileges => {
+					#[derive(RustcDecodable)]
+					struct SetPrivsData {
+						name :String,
+						privileges :String,
+					}
+					let d :SetPrivsData = ttry!(json::decode(
+						ttry!(std::str::from_utf8(body))
+					));
+					ttry!(scope.set_privileges.execute(&[
+						&d.privileges, srv_id, &d.name]));
+					send_string(res, &[]);
+				},
+				RecordLogin => {
+					#[derive(RustcDecodable)]
+					struct RecordLoginData {
+						name :String,
+						last_login :f64,
+					}
+					let d :RecordLoginData = ttry!(json::decode(
+						ttry!(std::str::from_utf8(body))
+					));
+					ttry!(scope.record_login.execute(&[
+						&d.last_login, &d.name]));
+					send_string(res, &[]);
+				},
+				}
+			},
+			None => {
+				send_error(res, 401, "Unauthorized");
+			},
 			}
 		},
 		PageNotFound => {
