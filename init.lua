@@ -1,5 +1,11 @@
 share_login = {}
 
+if not minetest.request_http_api then
+	error("Can't find the minetest.request_http_api function. "
+		.. "Either your copy of minetest is too old, or it wasn't compiled with cURL. "
+		.. "Please obtain a copy of minetest with this function.")
+end
+
 local http_api = minetest.request_http_api()
 
 if not http_api then
