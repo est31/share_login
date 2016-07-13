@@ -54,21 +54,22 @@ impl<'a> PreparedStatements<'a> {
 		Ok(PreparedStatements {
 			get_server_id : try!(conn.prepare("SELECT id FROM servers WHERE api_key = ?")),
 			get_auth : try!(conn.prepare("
-				SELECT password, last_login, privs
+				SELECT password, pw_override, last_login, privs
 				FROM players
-				LEFT JOIN privs
-				ON players.id = privs.player_id
-				WHERE players.name = ? AND privs.server_id = ?")),
+				LEFT JOIN players_on_servers
+					ON players.id = players_on_servers.player_id
+				WHERE players.name = ?
+					AND players_on_servers.server_id = ?")),
 			create_auth_pl : try!(conn.prepare("
 				INSERT INTO players (name, password, last_login)
 				VALUES (?, ?, ?)")),
 			create_auth_pr : try!(conn.prepare("
-				INSERT INTO privs(server_id, player_id, privs)
-				VALUES (?, (SELECT id FROM players WHERE name = ?), ?)")),
+				INSERT INTO players_on_servers(server_id, player_id, privs, pw_override)
+				VALUES (?, (SELECT id FROM players WHERE name = ?), ?, ?)")),
 			set_password : try!(conn.prepare("
 				UPDATE players SET password = ? WHERE name = ?")),
 			set_privileges : try!(conn.prepare("
-				UPDATE privs
+				UPDATE players_on_servers
 				SET privs = ?
 				WHERE server_id = ?
 					AND player_id = (SELECT id from players WHERE name = ?)")),
@@ -196,8 +197,8 @@ impl<'a> Server for Request<'a> {
 						ttry!(std::str::from_utf8(body))
 					));
 					let rows = scope.get_auth.query_map(&[&d.name, srv_id], |row|
-						(row.get(0), row.get(1), row.get(2)));
-					let pw_llogin_privs :Option<(String, String, String)> =
+						(row.get(0), row.get(1), row.get(2), row.get(3)));
+					let pw_llogin_privs :Option<(String, String, String, String)> =
 						ttry!(optionalize(rows));
 
 					#[derive(RustcEncodable)]
@@ -207,9 +208,9 @@ impl<'a> Server for Request<'a> {
 						last_login :String,
 					}
 					match pw_llogin_privs {
-					Some((pw, privs, llogin)) => {
+					Some((pw, pw_override, privs, llogin)) => {
 						let ans = AuthAnswer {
-							password : pw,
+							password : if pw_override == "" { pw } else { pw_override },
 							privileges : privs,
 							last_login : llogin,
 						};
@@ -232,7 +233,7 @@ impl<'a> Server for Request<'a> {
 					ttry!(scope.create_auth_pl.execute(&[
 						&d.name, &d.password, &""]));
 					ttry!(scope.create_auth_pr.execute(&[
-						srv_id, &d.name, &d.privileges]));
+						srv_id, &d.name, &d.privileges, &::rusqlite::types::Null]));
 					send_string(res, &[]);
 				},
 				SetPassword => {
@@ -326,10 +327,11 @@ fn create_db(conn :&Connection) {
 		password        TEXT NOT NULL,
 		last_login      TEXT NOT NULL
 		)", &[]).unwrap();
-	conn.execute("CREATE TABLE privs (
+	conn.execute("CREATE TABLE players_on_servers (
 		server_id       INTEGER NOT NULL,
 		player_id       INTEGER NOT NULL,
 		privs           TEXT NOT NULL,
+		pw_override     TEXT,
 		PRIMARY KEY (server_id, player_id),
 		FOREIGN KEY (server_id) REFERENCES servers(id),
 		FOREIGN KEY (player_id) REFERENCES players(id)
