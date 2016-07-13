@@ -65,7 +65,8 @@ share_login.auth_handler = {
 	get_auth = function(name)
 		assert(type(name) == "string")
 		local req = generate_request("v1/get_auth")
-		req.post_data = minetest.write_json({ name = name })
+		req.post_data = minetest.write_json({ name = name,
+			privileges_if_new = core.setting_get("default_privs") })
 		local res = execute_request(req)
 		-- If request not succeeded, return nil
 		local function error_log(msg)

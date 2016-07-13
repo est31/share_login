@@ -54,7 +54,7 @@ impl<'a> PreparedStatements<'a> {
 		Ok(PreparedStatements {
 			get_server_id : try!(conn.prepare("SELECT id FROM servers WHERE api_key = ?")),
 			get_auth : try!(conn.prepare("
-				SELECT password, pw_override, last_login, privs
+				SELECT password, pw_override, privs, last_login
 				FROM players
 				LEFT JOIN players_on_servers
 					ON players.id = players_on_servers.player_id
@@ -192,13 +192,14 @@ impl<'a> Server for Request<'a> {
 					#[derive(RustcDecodable)]
 					struct GetAuthData {
 						name :String,
+						privileges_if_new :String,
 					}
 					let d :GetAuthData = ttry!(json::decode(
 						ttry!(std::str::from_utf8(body))
 					));
 					let rows = scope.get_auth.query_map(&[&d.name, srv_id], |row|
 						(row.get(0), row.get(1), row.get(2), row.get(3)));
-					let pw_llogin_privs :Option<(String, String, String, String)> =
+					let pw_llogin_privs :Option<(String, Option<String>, Option<String>, String)> =
 						ttry!(optionalize(rows));
 
 					#[derive(RustcEncodable)]
@@ -210,8 +211,8 @@ impl<'a> Server for Request<'a> {
 					match pw_llogin_privs {
 					Some((pw, pw_override, privs, llogin)) => {
 						let ans = AuthAnswer {
-							password : if pw_override == "" { pw } else { pw_override },
-							privileges : privs,
+							password : if let Some(pwo) = pw_override { pwo } else { pw },
+							privileges : privs.unwrap_or(d.privileges_if_new),
 							last_login : llogin,
 						};
 						let encoded = ttry!(json::encode(&ans));
