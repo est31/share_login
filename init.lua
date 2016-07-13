@@ -45,7 +45,7 @@ local function wait_for_http_completion(handle)
 		end
 		last_res = http_api.fetch_async_get(handle)
 	end
-	core.log('action', "Bla '" .. tr .. "'.")
+	--core.log('action', "Waited for http request completion for " .. tr .. " seconds.")
 	return last_res
 end
 
